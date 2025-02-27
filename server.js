@@ -2,12 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const morgan = require('morgan');
-const dotenv = require('dotenv');
 const { logger } = require('./utils/logger');
 const requestLogger = require('./middleware/requestLogger');
+const config = require('./utils/config');
+require('./models'); // This will import all your models
 
-// Load environment variables
-dotenv.config();
 
 // Initialize express
 const app = express();
@@ -16,7 +15,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan('combined', { stream: logger.stream }));
-app.use(requestLogger); // Add the request logger middleware
+app.use(requestLogger);
+
+// Database connection
+mongoose.connect(config.mongoUri)
+  .then(() => {
+    logger.info('Connected to MongoDB');
+    console.log('Connected to MongoDB');
+  })
+  .catch((error) => {
+    logger.error('Error connecting to MongoDB:', error.message);
+    process.exit(1); // Exit if database connection fails
+  });
+
+
 
 // Routes
 app.use('/api/auth', require('./routes/auth.routes'));
@@ -32,21 +44,19 @@ app.use((err, req, res, next) => {
   res.status(500).send({
     status: 'error',
     message: 'Something broke!',
-    error: process.env.NODE_ENV === 'development' ? err.stack : {}
+    error: config.nodeEnv === 'development' ? err.stack : {}
   });
 });
 
-// Database connection
-mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
-  .then(() => logger.info('Connected to MongoDB'))
-  .catch((err) => logger.error('MongoDB connection error:', err));
+
 
 // Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  logger.info(`Server is running on port ${PORT}`);
+const PORT = config.port;
+// Ensure connection before starting server
+mongoose.connection.once('open', () => {
+  // Start server only after successful database connection
+  app.listen(PORT, () => {
+    logger.info(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
+  });
 });
