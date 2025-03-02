@@ -120,16 +120,32 @@ The system uses JWT (JSON Web Tokens) for authentication. Tokens are valid for 2
 ### Invoice Model
 ```javascript
 {
-  invoiceId: String (required, unique),
+  metadata: {
+    invoiceNumber: String (required, unique),
+    invoiceDate: Date,
+    dueDate: Date,
+    status: String (enum: ['draft', 'sent', 'paid', 'overdue'])
+  },
   client: ObjectId (ref: 'Contact'),
-  amount: Number (required),
-  items: [{
+  lineItems: [{
     description: String,
-    price: Number,
-    quantity: Number
+    quantity: Number,
+    unitPrice: Number,
+    taxRate: Number,
+    isTaxable: Boolean,
+    lineTotal: Number
   }],
-  status: String (enum: ['paid', 'pending', 'overdue']),
-  dueDate: Date,
+  financials: {
+    subtotal: Number,
+    taxes: [{
+      type: String,
+      rate: Number,
+      amount: Number
+    }],
+    shipping: Number,
+    grandTotal: Number
+  },
+  notes: String,
   createdBy: ObjectId (ref: 'User'),
   createdAt: Date,
   updatedAt: Date
@@ -137,6 +153,43 @@ The system uses JWT (JSON Web Tokens) for authentication. Tokens are valid for 2
 ```
 
 ## API Routes
+
+### Invoice Routes (/api/invoices)
+
+#### GET /
+- **Purpose**: Get all invoices for authenticated user
+- **Auth**: Required
+- **Response**: Array of invoice objects
+- **Sort**: By invoice date (descending)
+
+#### POST /
+- **Purpose**: Create new invoice
+- **Auth**: Required
+- **Body**: Invoice object
+- **Features**:
+  - Auto-generates invoice number if not provided
+  - Calculates line item totals
+  - Computes tax amounts and grand total
+- **Response**: Created invoice object
+
+#### GET /:id
+- **Purpose**: Get invoice by ID
+- **Auth**: Required
+- **Response**: Invoice object
+
+#### PUT /:id
+- **Purpose**: Update invoice
+- **Auth**: Required
+- **Body**: Updated invoice fields
+- **Features**:
+  - Recalculates financials if line items updated
+  - Updates timestamps
+- **Response**: Updated invoice object
+
+#### DELETE /:id
+- **Purpose**: Delete invoice
+- **Auth**: Required
+- **Response**: Success message
 
 ### User Routes (/api/users)
 - **GET /** - Get all users (admin only)
@@ -160,13 +213,6 @@ The system uses JWT (JSON Web Tokens) for authentication. Tokens are valid for 2
 - **GET /:id** - Get contact by ID
 - **PUT /:id** - Update contact
 - **DELETE /:id** - Delete contact
-
-### Invoice Routes (/api/invoices)
-- **GET /** - Get all invoices
-- **POST /** - Create new invoice
-- **GET /:id** - Get invoice by ID
-- **PUT /:id** - Update invoice
-- **DELETE /:id** - Delete invoice
 
 ## Middleware
 
