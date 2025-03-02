@@ -36,9 +36,11 @@ router.post('/', auth, async (req, res) => {
     // Generate invoice number if not provided
     if (!req.body.metadata?.invoiceNumber) {
       const count = await Invoice.countDocuments();
+      const timestamp = Date.now();
+      const randomSuffix = Math.floor(Math.random() * 1000);
       req.body.metadata = {
         ...req.body.metadata,
-        invoiceNumber: `INV-${Date.now()}-${count + 1}`
+        invoiceNumber: `INV-${timestamp}-${count + 1}-${randomSuffix}`
       };
     }
 
@@ -71,6 +73,7 @@ router.post('/', auth, async (req, res) => {
       createdBy: req.user.id,
       updatedAt: Date.now()
     });
+    console.log(invoice);
 
     await invoice.save();
     res.status(201).json(invoice);
