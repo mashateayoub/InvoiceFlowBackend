@@ -76,10 +76,7 @@ router.post('/', auth, async (req, res) => {
     res.status(201).json(invoice);
   } catch (err) {
     logger.error('Error creating invoice:', err);
-    if (err.code === 11000) {
-      return res.status(400).json({ message: 'Invoice number already exists' });
-    }
-    res.status(500).json({ message: 'Server error' });
+    return res.status(400).json({ message: 'Error creating invoice ', error: err });
   }
 });
 
