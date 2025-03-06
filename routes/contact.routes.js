@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const auth = require('../middleware/auth');
 const Contact = require('../models/Contact');
+const Invoice = require('../models/Invoice');
 const { logger } = require('../utils/logger');
 
 // Get all contacts for the authenticated user
@@ -72,6 +73,18 @@ router.delete('/:id', auth, async (req, res) => {
     res.json({ message: 'Contact deleted' });
   } catch (err) {
     logger.error('Error deleting contact:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get invoices by client ID
+router.get('/:id/invoices', auth, async (req, res) => {
+  try {
+    const invoices = await Invoice.find({ clientId: req.params.id })
+      .sort({ createdAt: -1 });
+    res.json(invoices);
+  } catch (err) {
+    logger.error('Error fetching invoices:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
